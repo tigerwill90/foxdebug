@@ -77,13 +77,17 @@ func dumpSysInfo(c fox.Context) string {
 	builder.WriteString(strconv.FormatBool(f.ClientIPStrategyEnabled()))
 	builder.WriteByte('\n')
 	builder.WriteString("Registered route:\n")
-	it := fox.NewIterator(tree)
-	for it.Rewind(); it.Valid(); it.Next() {
+	it := tree.Iter()
+	for method, route := range it.All() {
 		builder.WriteString("- ")
-		builder.WriteString(it.Method())
+		builder.WriteString(method)
 		builder.WriteString(" ")
-		builder.WriteString(it.Path())
-		builder.WriteByte('\n')
+		builder.WriteString(route.Path())
+		builder.WriteString(" [RTS: ")
+		builder.WriteString(strconv.FormatBool(route.RedirectTrailingSlashEnabled()))
+		builder.WriteString(", ITS: ")
+		builder.WriteString(strconv.FormatBool(route.IgnoreTrailingSlashEnabled()))
+		builder.WriteString("]\n")
 	}
 
 	builder.WriteString("\n\nHandler Information:\n")
