@@ -27,15 +27,14 @@ func DebugHandler() fox.HandlerFunc {
 		}
 
 		// Send the response
-		c.SetHeader(fox.HeaderServer, "fox")
+		c.SetHeader(fox.HeaderServer, "fox:v0.20.0")
+		c.SetHeader(fox.HeaderCacheControl, "max-age=0, must-revalidate, no-cache, no-store, private")
 		_ = c.String(http.StatusOK, dumpSysInfo(c))
 	}
 }
 
 func dumpSysInfo(c fox.Context) string {
 	req := c.Request()
-	path := c.Path()
-	params := c.Params()
 
 	// Get host information
 	hostname, err := os.Hostname()
@@ -54,7 +53,9 @@ func dumpSysInfo(c fox.Context) string {
 	}
 
 	f := c.Fox()
-	tree := f.Tree()
+	stats := f.Stats()
+	txn := f.Txn(false)
+	defer txn.Abort()
 
 	// Use strings.Builder to build the response
 	var builder strings.Builder
@@ -62,31 +63,33 @@ func dumpSysInfo(c fox.Context) string {
 	builder.WriteString("Repo: https://github.com/tigerwill90/fox\n\n")
 	builder.WriteString("Router Information:\n")
 	builder.WriteString("Redirect Trailing Slash: ")
-	builder.WriteString(strconv.FormatBool(f.RedirectTrailingSlashEnabled()))
+	builder.WriteString(strconv.FormatBool(stats.RedirectTrailingSlash))
 	builder.WriteByte('\n')
 	builder.WriteString("Ignore Trailing Slash: ")
-	builder.WriteString(strconv.FormatBool(f.IgnoreTrailingSlashEnabled()))
+	builder.WriteString(strconv.FormatBool(stats.IgnoreTrailingSlash))
 	builder.WriteByte('\n')
 	builder.WriteString("Auto OPTIONS: ")
-	builder.WriteString(strconv.FormatBool(f.AutoOptionsEnabled()))
+	builder.WriteString(strconv.FormatBool(stats.AutoOptions))
 	builder.WriteByte('\n')
 	builder.WriteString("Handle 405: ")
-	builder.WriteString(strconv.FormatBool(f.MethodNotAllowedEnabled()))
+	builder.WriteString(strconv.FormatBool(stats.MethodNotAllowed))
 	builder.WriteByte('\n')
 	builder.WriteString("Client IP strategy: ")
-	builder.WriteString(strconv.FormatBool(f.ClientIPStrategyEnabled()))
+	builder.WriteString(strconv.FormatBool(stats.ClientIP))
 	builder.WriteByte('\n')
 	builder.WriteString("Registered route:\n")
-	it := tree.Iter()
+	it := txn.Iter()
 	for method, route := range it.All() {
 		builder.WriteString("- ")
 		builder.WriteString(method)
 		builder.WriteString(" ")
-		builder.WriteString(route.Path())
+		builder.WriteString(route.Pattern())
 		builder.WriteString(" [RTS: ")
 		builder.WriteString(strconv.FormatBool(route.RedirectTrailingSlashEnabled()))
 		builder.WriteString(", ITS: ")
 		builder.WriteString(strconv.FormatBool(route.IgnoreTrailingSlashEnabled()))
+		builder.WriteString(", CIR: ")
+		builder.WriteString(strconv.FormatBool(route.ClientIPResolverEnabled()))
 		builder.WriteString("]\n")
 	}
 
@@ -96,7 +99,7 @@ func dumpSysInfo(c fox.Context) string {
 		builder.WriteString(ip.String())
 		builder.WriteByte('\n')
 	}
-	if f.ClientIPStrategyEnabled() {
+	if c.Route().ClientIPResolverEnabled() {
 		builder.WriteString("Client IP: ")
 		ip, err := c.ClientIP()
 		if err != nil {
@@ -108,18 +111,19 @@ func dumpSysInfo(c fox.Context) string {
 	}
 
 	builder.WriteString("Matched Route: ")
-	builder.WriteString(path)
+	builder.WriteString(c.Pattern())
 	builder.WriteByte('\n')
 	builder.WriteString("Route Parameters:\n")
-	if len(params) > 0 {
-		for _, param := range params {
-			builder.WriteString("- ")
-			builder.WriteString(param.Key)
-			builder.WriteString(": ")
-			builder.WriteString(param.Value)
-			builder.WriteByte('\n')
-		}
-	} else {
+	hasParams := false
+	for param := range c.Params() {
+		builder.WriteString("- ")
+		builder.WriteString(param.Key)
+		builder.WriteString(": ")
+		builder.WriteString(param.Value)
+		builder.WriteByte('\n')
+		hasParams = true
+	}
+	if !hasParams {
 		builder.WriteString("- None\n")
 	}
 

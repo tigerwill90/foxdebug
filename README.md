@@ -16,10 +16,27 @@ go get -u github.com/tigerwill90/foxdebug
 ### Usage
 To use the `foxdebug` package, simply import it and register the DebugHandler to any route.
 ````go
-f := fox.New(fox.DefaultOptions())
-f.MustHandle(http.MethodGet, "/debug", foxdebug.DebugHandler())
+package main
 
-log.Fatal(http.ListenAndServe(":8080", f))
+import (
+	"errors"
+	"github.com/tigerwill90/fox"
+	"github.com/tigerwill90/foxdebug"
+	"log"
+	"net/http"
+)
+
+func main() {
+	f, err := fox.New(fox.DefaultOptions())
+	if err != nil {
+		panic(err)
+	}
+	f.MustHandle(http.MethodGet, "/debug", foxdebug.DebugHandler())
+
+	if err = http.ListenAndServe(":8080", f); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		log.Fatalln(err)
+	}
+}
 ````
 
 ### License
