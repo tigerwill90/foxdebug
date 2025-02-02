@@ -27,7 +27,7 @@ func DebugHandler() fox.HandlerFunc {
 		}
 
 		// Send the response
-		c.SetHeader(fox.HeaderServer, "fox:v0.20.0")
+		c.SetHeader(fox.HeaderServer, "fox:v0.22.0")
 		c.SetHeader(fox.HeaderCacheControl, "max-age=0, must-revalidate, no-cache, no-store, private")
 		_ = c.String(http.StatusOK, dumpSysInfo(c))
 	}
@@ -89,7 +89,7 @@ func dumpSysInfo(c fox.Context) string {
 		builder.WriteString(", ITS: ")
 		builder.WriteString(strconv.FormatBool(route.IgnoreTrailingSlashEnabled()))
 		builder.WriteString(", CIR: ")
-		builder.WriteString(strconv.FormatBool(route.ClientIPResolverEnabled()))
+		builder.WriteString(strconv.FormatBool(route.ClientIPResolver() != nil))
 		builder.WriteString("]\n")
 	}
 
@@ -99,7 +99,7 @@ func dumpSysInfo(c fox.Context) string {
 		builder.WriteString(ip.String())
 		builder.WriteByte('\n')
 	}
-	if c.Route().ClientIPResolverEnabled() {
+	if c.Route().ClientIPResolver() != nil {
 		builder.WriteString("Client IP: ")
 		ip, err := c.ClientIP()
 		if err != nil {
