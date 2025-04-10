@@ -13,27 +13,29 @@ import (
 	"time"
 )
 
-// DebugHandler returns a HandlerFunc that responds with detailed system and request information. Additionally, if a
-// "sleep" query parameter is provided with a valid duration, the handler will sleep for the specified duration
-// before responding. This function may leak sensitive information and is only useful for debugging purposes, providing
-// a comprehensive overview of the incoming request and the system it is running on.
+// DebugHandler returns a HandlerFunc that responds with detailed system, router and request information. This function may leak
+// sensitive information and is only useful for debugging purposes, providing a comprehensive overview of the incoming
+// request and the system it is running on.
 func DebugHandler() fox.HandlerFunc {
 	return func(c fox.Context) {
-		// Sleep if "sleep" query parameter is provided with a valid duration
-		if sleep := c.QueryParam("sleep"); sleep != "" {
-			if d, err := time.ParseDuration(sleep); err == nil {
-				time.Sleep(d)
-			}
-		}
-
-		// Send the response
-		c.SetHeader(fox.HeaderServer, "fox:v0.20.0")
+		c.SetHeader(fox.HeaderServer, "fox:v0.23.0")
 		c.SetHeader(fox.HeaderCacheControl, "max-age=0, must-revalidate, no-cache, no-store, private")
-		_ = c.String(http.StatusOK, dumpSysInfo(c))
+		_ = c.String(http.StatusOK, dumpSysInfo(c, c.Fox()))
 	}
 }
 
-func dumpSysInfo(c fox.Context) string {
+// DebugHandlerWith returns a HandlerFunc that responds with detailed system, router and request information using the
+// provided router instance. This function may leak sensitive information and is only useful for debugging purposes,
+// providing a comprehensive overview of the incoming request and the system it is running on.
+func DebugHandlerWith(r *fox.Router) fox.HandlerFunc {
+	return func(c fox.Context) {
+		c.SetHeader(fox.HeaderServer, "fox:v0.23.0")
+		c.SetHeader(fox.HeaderCacheControl, "max-age=0, must-revalidate, no-cache, no-store, private")
+		_ = c.String(http.StatusOK, dumpSysInfo(c, r))
+	}
+}
+
+func dumpSysInfo(c fox.Context, f *fox.Router) string {
 	req := c.Request()
 
 	// Get host information
@@ -52,7 +54,6 @@ func dumpSysInfo(c fox.Context) string {
 		requestDump = []byte("Failed to dump request")
 	}
 
-	f := c.Fox()
 	stats := f.Stats()
 	txn := f.Txn(false)
 	defer txn.Abort()
@@ -89,7 +90,7 @@ func dumpSysInfo(c fox.Context) string {
 		builder.WriteString(", ITS: ")
 		builder.WriteString(strconv.FormatBool(route.IgnoreTrailingSlashEnabled()))
 		builder.WriteString(", CIR: ")
-		builder.WriteString(strconv.FormatBool(route.ClientIPResolverEnabled()))
+		builder.WriteString(strconv.FormatBool(route.ClientIPResolver() != nil))
 		builder.WriteString("]\n")
 	}
 
@@ -99,7 +100,7 @@ func dumpSysInfo(c fox.Context) string {
 		builder.WriteString(ip.String())
 		builder.WriteByte('\n')
 	}
-	if c.Route().ClientIPResolverEnabled() {
+	if c.Route() != nil && c.Route().ClientIPResolver() != nil {
 		builder.WriteString("Client IP: ")
 		ip, err := c.ClientIP()
 		if err != nil {
