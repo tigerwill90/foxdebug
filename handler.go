@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-// DebugHandler returns a HandlerFunc that responds with detailed system and request information. This function may leak
+// DebugHandler returns a HandlerFunc that responds with detailed system, router and request information. This function may leak
 // sensitive information and is only useful for debugging purposes, providing a comprehensive overview of the incoming
 // request and the system it is running on.
 func DebugHandler() fox.HandlerFunc {
@@ -24,6 +24,9 @@ func DebugHandler() fox.HandlerFunc {
 	}
 }
 
+// DebugHandlerWith returns a HandlerFunc that responds with detailed system, router and request information using the
+// provided router instance. This function may leak sensitive information and is only useful for debugging purposes,
+// providing a comprehensive overview of the incoming request and the system it is running on.
 func DebugHandlerWith(r *fox.Router) fox.HandlerFunc {
 	return func(c fox.Context) {
 		c.SetHeader(fox.HeaderServer, "fox:v0.23.0")
