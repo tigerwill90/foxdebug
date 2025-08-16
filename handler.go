@@ -14,25 +14,29 @@ import (
 	"github.com/tigerwill90/foxdebug/internal/humanize"
 )
 
-// DebugHandler returns a HandlerFunc that responds with detailed system, router and request information. This function may leak
+const (
+	version = "fox:v0.24.0"
+)
+
+// Handler returns a HandlerFunc that responds with detailed system, router and request information. This function may leak
 // sensitive information and is only useful for debugging purposes, providing a comprehensive overview of the incoming
 // request and the system it is running on.
-func DebugHandler() fox.HandlerFunc {
+func Handler() fox.HandlerFunc {
 	return func(c fox.Context) {
-		c.SetHeader(fox.HeaderServer, "fox:v0.23.0")
+		c.SetHeader(fox.HeaderServer, version)
 		c.SetHeader(fox.HeaderCacheControl, "max-age=0, must-revalidate, no-cache, no-store, private")
 		_ = c.String(http.StatusOK, dumpSysInfo(c, c.Fox()))
 	}
 }
 
-// DebugHandlerWith returns a HandlerFunc that responds with detailed system, router and request information using the
+// HandlerWith returns a HandlerFunc that responds with detailed system, router and request information using the
 // provided router instance. This function may leak sensitive information and is only useful for debugging purposes,
 // providing a comprehensive overview of the incoming request and the system it is running on.
-func DebugHandlerWith(r *fox.Router) fox.HandlerFunc {
+func HandlerWith(f *fox.Router) fox.HandlerFunc {
 	return func(c fox.Context) {
-		c.SetHeader(fox.HeaderServer, "fox:v0.23.0")
+		c.SetHeader(fox.HeaderServer, version)
 		c.SetHeader(fox.HeaderCacheControl, "max-age=0, must-revalidate, no-cache, no-store, private")
-		_ = c.String(http.StatusOK, dumpSysInfo(c, r))
+		_ = c.String(http.StatusOK, dumpSysInfo(c, f))
 	}
 }
 
