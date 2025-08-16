@@ -12,10 +12,10 @@ import (
 // Bytes produces a human-readable representation of an SI size.
 func Bytes(s uint64) string {
 	sizes := []string{"B", "kB", "MB", "GB", "TB", "PB", "EB"}
-	return humanateBytes(s, 1000, sizes)
+	return humanizeBytes(s, 1000, sizes)
 }
 
-func humanateBytes(s uint64, base float64, sizes []string) string {
+func humanizeBytes(s uint64, base float64, sizes []string) string {
 	if s < 10 {
 		return fmt.Sprintf("%d B", s)
 	}
