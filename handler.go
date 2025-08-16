@@ -2,8 +2,6 @@ package foxdebug
 
 import (
 	"fmt"
-	"github.com/tigerwill90/fox"
-	"github.com/tigerwill90/foxdebug/internal/humanize"
 	"net/http"
 	"net/http/httputil"
 	"os"
@@ -11,27 +9,34 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/tigerwill90/fox"
+	"github.com/tigerwill90/foxdebug/internal/humanize"
 )
 
-// DebugHandler returns a HandlerFunc that responds with detailed system, router and request information. This function may leak
+const (
+	version = "fox:v0.24.0"
+)
+
+// Handler returns a HandlerFunc that responds with detailed system, router and request information. This function may leak
 // sensitive information and is only useful for debugging purposes, providing a comprehensive overview of the incoming
 // request and the system it is running on.
-func DebugHandler() fox.HandlerFunc {
+func Handler() fox.HandlerFunc {
 	return func(c fox.Context) {
-		c.SetHeader(fox.HeaderServer, "fox:v0.23.0")
+		c.SetHeader(fox.HeaderServer, version)
 		c.SetHeader(fox.HeaderCacheControl, "max-age=0, must-revalidate, no-cache, no-store, private")
 		_ = c.String(http.StatusOK, dumpSysInfo(c, c.Fox()))
 	}
 }
 
-// DebugHandlerWith returns a HandlerFunc that responds with detailed system, router and request information using the
+// HandlerWith returns a HandlerFunc that responds with detailed system, router and request information using the
 // provided router instance. This function may leak sensitive information and is only useful for debugging purposes,
 // providing a comprehensive overview of the incoming request and the system it is running on.
-func DebugHandlerWith(r *fox.Router) fox.HandlerFunc {
+func HandlerWith(f *fox.Router) fox.HandlerFunc {
 	return func(c fox.Context) {
-		c.SetHeader(fox.HeaderServer, "fox:v0.23.0")
+		c.SetHeader(fox.HeaderServer, version)
 		c.SetHeader(fox.HeaderCacheControl, "max-age=0, must-revalidate, no-cache, no-store, private")
-		_ = c.String(http.StatusOK, dumpSysInfo(c, r))
+		_ = c.String(http.StatusOK, dumpSysInfo(c, f))
 	}
 }
 
@@ -63,11 +68,11 @@ func dumpSysInfo(c fox.Context, f *fox.Router) string {
 	builder.WriteString("Fox: awesome and blazing fast Go router!\n")
 	builder.WriteString("Repo: https://github.com/tigerwill90/fox\n\n")
 	builder.WriteString("Router Information:\n")
-	builder.WriteString("Redirect Trailing Slash: ")
-	builder.WriteString(strconv.FormatBool(stats.RedirectTrailingSlash))
+	builder.WriteString("Trailing Slash Option: ")
+	builder.WriteString(trailingSlashOption(stats.TrailingSlashOption))
 	builder.WriteByte('\n')
-	builder.WriteString("Ignore Trailing Slash: ")
-	builder.WriteString(strconv.FormatBool(stats.IgnoreTrailingSlash))
+	builder.WriteString("Fixed Path Option: ")
+	builder.WriteString(fixedPathOption(stats.FixedPathOption))
 	builder.WriteByte('\n')
 	builder.WriteString("Auto OPTIONS: ")
 	builder.WriteString(strconv.FormatBool(stats.AutoOptions))
@@ -85,10 +90,8 @@ func dumpSysInfo(c fox.Context, f *fox.Router) string {
 		builder.WriteString(method)
 		builder.WriteString(" ")
 		builder.WriteString(route.Pattern())
-		builder.WriteString(" [RTS: ")
-		builder.WriteString(strconv.FormatBool(route.RedirectTrailingSlashEnabled()))
-		builder.WriteString(", ITS: ")
-		builder.WriteString(strconv.FormatBool(route.IgnoreTrailingSlashEnabled()))
+		builder.WriteString(" [TSO: ")
+		builder.WriteString(trailingSlashOption(route.TrailingSlashOption()))
 		builder.WriteString(", CIR: ")
 		builder.WriteString(strconv.FormatBool(route.ClientIPResolver() != nil))
 		builder.WriteString("]\n")
@@ -166,4 +169,26 @@ func dumpSysInfo(c fox.Context, f *fox.Router) string {
 	builder.WriteByte('\n')
 
 	return builder.String()
+}
+
+func trailingSlashOption(mode fox.TrailingSlashOption) string {
+	switch mode {
+	case fox.RedirectSlash:
+		return "RedirectSlash"
+	case fox.RelaxedSlash:
+		return "RelaxedSlash"
+	default:
+		return "StrictSlash"
+	}
+}
+
+func fixedPathOption(mode fox.FixedPathOption) string {
+	switch mode {
+	case fox.RedirectPath:
+		return "RedirectPath"
+	case fox.RelaxedPath:
+		return "RelaxedPath"
+	default:
+		return "StrictPath"
+	}
 }

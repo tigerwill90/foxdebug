@@ -20,10 +20,11 @@ package main
 
 import (
 	"errors"
-	"github.com/tigerwill90/fox"
-	"github.com/tigerwill90/foxdebug"
 	"log"
 	"net/http"
+
+	"github.com/tigerwill90/fox"
+	"github.com/tigerwill90/foxdebug"
 )
 
 func main() {
@@ -31,7 +32,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	f.MustHandle(http.MethodGet, "/debug", foxdebug.DebugHandler())
+	f.MustHandle(http.MethodGet, "/debug", foxdebug.Handler())
 
 	if err = http.ListenAndServe(":8080", f); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatalln(err)
