@@ -15,17 +15,17 @@ import (
 )
 
 const (
-	version = "fox:v0.24.0"
+	version = "fox:v0.26.0"
 )
 
 // Handler returns a HandlerFunc that responds with detailed system, router and request information. This function may leak
 // sensitive information and is only useful for debugging purposes, providing a comprehensive overview of the incoming
 // request and the system it is running on.
 func Handler() fox.HandlerFunc {
-	return func(c fox.Context) {
+	return func(c *fox.Context) {
 		c.SetHeader(fox.HeaderServer, version)
 		c.SetHeader(fox.HeaderCacheControl, "max-age=0, must-revalidate, no-cache, no-store, private")
-		_ = c.String(http.StatusOK, dumpSysInfo(c, c.Fox()))
+		_ = c.String(http.StatusOK, dumpSysInfo(c, c.Router()))
 	}
 }
 
@@ -33,14 +33,14 @@ func Handler() fox.HandlerFunc {
 // provided router instance. This function may leak sensitive information and is only useful for debugging purposes,
 // providing a comprehensive overview of the incoming request and the system it is running on.
 func HandlerWith(f *fox.Router) fox.HandlerFunc {
-	return func(c fox.Context) {
+	return func(c *fox.Context) {
 		c.SetHeader(fox.HeaderServer, version)
 		c.SetHeader(fox.HeaderCacheControl, "max-age=0, must-revalidate, no-cache, no-store, private")
 		_ = c.String(http.StatusOK, dumpSysInfo(c, f))
 	}
 }
 
-func dumpSysInfo(c fox.Context, f *fox.Router) string {
+func dumpSysInfo(c *fox.Context, f *fox.Router) string {
 	req := c.Request()
 
 	// Get host information
@@ -59,7 +59,7 @@ func dumpSysInfo(c fox.Context, f *fox.Router) string {
 		requestDump = []byte("Failed to dump request")
 	}
 
-	stats := f.Stats()
+	stats := f.RouterInfo()
 	txn := f.Txn(false)
 	defer txn.Abort()
 
@@ -85,9 +85,15 @@ func dumpSysInfo(c fox.Context, f *fox.Router) string {
 	builder.WriteByte('\n')
 	builder.WriteString("Registered route:\n")
 	it := txn.Iter()
-	for method, route := range it.All() {
+	for route := range it.All() {
 		builder.WriteString("- ")
-		builder.WriteString(method)
+		sbLen := builder.Len()
+		for method := range route.Methods() {
+			if builder.Len() > sbLen {
+				builder.WriteString(",")
+			}
+			builder.WriteString(method)
+		}
 		builder.WriteString(" ")
 		builder.WriteString(route.Pattern())
 		builder.WriteString(" [TSO: ")
