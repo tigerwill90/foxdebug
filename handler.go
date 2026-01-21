@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	version = "fox:v0.26.0"
+	version = "fox:v0.26.1"
 )
 
 // Handler returns a HandlerFunc that responds with detailed system, router and request information. This function may leak
