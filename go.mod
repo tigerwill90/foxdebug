@@ -4,7 +4,7 @@ go 1.24.0
 
 toolchain go1.24.2
 
-require github.com/tigerwill90/fox v0.26.1
+require github.com/tigerwill90/fox v0.26.2
 
 require (
 	golang.org/x/net v0.49.0 // indirect
