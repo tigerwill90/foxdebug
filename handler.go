@@ -1,7 +1,6 @@
 package foxdebug
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httputil"
 	"os"
@@ -15,7 +14,7 @@ import (
 )
 
 const (
-	version = "fox:v0.26.1"
+	_version = "fox:v0.26.2"
 )
 
 // Handler returns a HandlerFunc that responds with detailed system, router and request information. This function may leak
@@ -23,7 +22,7 @@ const (
 // request and the system it is running on.
 func Handler() fox.HandlerFunc {
 	return func(c *fox.Context) {
-		c.SetHeader(fox.HeaderServer, version)
+		c.SetHeader(fox.HeaderServer, _version)
 		c.SetHeader(fox.HeaderCacheControl, "max-age=0, must-revalidate, no-cache, no-store, private")
 		_ = c.String(http.StatusOK, dumpSysInfo(c, c.Router()))
 	}
@@ -34,7 +33,7 @@ func Handler() fox.HandlerFunc {
 // providing a comprehensive overview of the incoming request and the system it is running on.
 func HandlerWith(f *fox.Router) fox.HandlerFunc {
 	return func(c *fox.Context) {
-		c.SetHeader(fox.HeaderServer, version)
+		c.SetHeader(fox.HeaderServer, _version)
 		c.SetHeader(fox.HeaderCacheControl, "max-age=0, must-revalidate, no-cache, no-store, private")
 		_ = c.String(http.StatusOK, dumpSysInfo(c, f))
 	}
@@ -159,10 +158,10 @@ func dumpSysInfo(c *fox.Context, f *fox.Router) string {
 	builder.WriteString(strconv.Itoa(os.Getpid()))
 	builder.WriteByte('\n')
 	builder.WriteString("CPU Cores: ")
-	builder.WriteString(fmt.Sprintf("%d", runtime.NumCPU()))
+	builder.WriteString(strconv.Itoa(runtime.NumCPU()))
 	builder.WriteByte('\n')
 	builder.WriteString("Number of Goroutines: ")
-	builder.WriteString(fmt.Sprintf("%d", runtime.NumGoroutine()))
+	builder.WriteString(strconv.Itoa(runtime.NumGoroutine()))
 	builder.WriteByte('\n')
 	builder.WriteString("Allocated Memory: ")
 	builder.WriteString(humanize.Bytes(memStats.Alloc))

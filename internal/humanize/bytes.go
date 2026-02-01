@@ -9,10 +9,11 @@ import (
 	"math"
 )
 
+var _sizes = []string{"B", "kB", "MB", "GB", "TB", "PB", "EB"}
+
 // Bytes produces a human-readable representation of an SI size.
 func Bytes(s uint64) string {
-	sizes := []string{"B", "kB", "MB", "GB", "TB", "PB", "EB"}
-	return humanizeBytes(s, 1000, sizes)
+	return humanizeBytes(s, 1000, _sizes)
 }
 
 func humanizeBytes(s uint64, base float64, sizes []string) string {
